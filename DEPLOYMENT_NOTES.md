@@ -10,10 +10,10 @@ Local development currently uses:
 ```text
 React client:  http://localhost:5173
 Express API:   http://localhost:3001
-Database:      SQLite currently, migrating to PostgreSQL
+Database:      PostgreSQL after the Phase 1 migration
 ```
 
-The target deployment database is PostgreSQL.
+SQLite was used earlier in the learning project. The Phase 1 deployment branch migrates the server code to PostgreSQL.
 
 ## Local Development
 
@@ -65,10 +65,22 @@ The server reads its port from:
 PORT
 ```
 
-After the PostgreSQL migration, the server will also read:
+The server reads its PostgreSQL connection string from:
 
 ```text
 DATABASE_URL
+```
+
+Some hosted PostgreSQL providers require SSL. The server can opt into that with:
+
+```text
+DATABASE_SSL=true
+```
+
+The server also reads the deployed client origin from:
+
+```text
+CLIENT_ORIGIN
 ```
 
 Example files are included:
@@ -126,7 +138,7 @@ npm start
 Phase 1 tasks:
 
 1. Create a short-lived branch such as `deploy/vercel-render`.
-2. Migrate the server database layer from SQLite to PostgreSQL.
+2. Use the PostgreSQL server database layer.
 3. Add `DATABASE_URL` to `server/.env.example`.
 4. Configure API CORS for the deployed front-end URL.
 5. Deploy the server to Render, Railway, Fly.io, or a similar host.
@@ -222,7 +234,7 @@ After each deployment phase works, merge the branch back into `main`.
 
 Before Phase 1 deployment:
 
-1. Migrate SQLite code to PostgreSQL.
+1. Confirm the server uses PostgreSQL.
 2. Add `DATABASE_URL` to `server/.env.example`.
 3. Confirm the server still supports `PORT`.
 4. Set `VITE_API_BASE_URL` for the hosted client.

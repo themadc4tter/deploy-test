@@ -49,15 +49,22 @@ function validateTitle(title) {
 }
 
 function mapTodoRow(row) {
-  // The database uses snake_case column names and 0/1 for booleans.
+  const createdAt =
+    row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at;
+  const completedAt =
+    row.completed_at instanceof Date
+      ? row.completed_at.toISOString()
+      : row.completed_at;
+
+  // The database uses snake_case column names.
   // The API returns camelCase names and true/false for easier front-end use.
   return {
     id: row.id,
     visitorId: row.visitor_id,
     title: row.title,
-    completed: Boolean(row.completed),
-    createdAt: row.created_at,
-    completedAt: row.completed_at
+    completed: row.completed,
+    createdAt,
+    completedAt
   };
 }
 
@@ -82,17 +89,17 @@ router.get("/", async (request, response) => {
   }
 
   const database = getDatabase();
-  const rows = await database.all(
+  const result = await database.query(
     `
       SELECT id, visitor_id, title, completed, created_at, completed_at
       FROM todos
-      WHERE visitor_id = ?
+      WHERE visitor_id = $1
       ORDER BY completed ASC, created_at DESC
     `,
-    visitorId
+    [visitorId]
   );
 
-  response.json(rows.map(mapTodoRow));
+  response.json(result.rows.map(mapTodoRow));
 });
 
 router.post("/", async (request, response) => {
@@ -112,29 +119,18 @@ router.post("/", async (request, response) => {
   }
 
   const database = getDatabase();
-  const createdAt = new Date().toISOString();
+  const createdAt = new Date();
 
-  const result = await database.run(
+  const result = await database.query(
     `
       INSERT INTO todos (visitor_id, title, completed, created_at, completed_at)
-      VALUES (?, ?, 0, ?, NULL)
+      VALUES ($1, $2, FALSE, $3, NULL)
+      RETURNING id, visitor_id, title, completed, created_at, completed_at
     `,
-    visitorId,
-    titleResult.title,
-    createdAt
+    [visitorId, titleResult.title, createdAt]
   );
 
-  const row = await database.get(
-    `
-      SELECT id, visitor_id, title, completed, created_at, completed_at
-      FROM todos
-      WHERE id = ? AND visitor_id = ?
-    `,
-    result.lastID,
-    visitorId
-  );
-
-  response.status(201).json(mapTodoRow(row));
+  response.status(201).json(mapTodoRow(result.rows[0]));
 });
 
 router.patch("/:id", async (request, response) => {
@@ -179,8 +175,8 @@ router.patch("/:id", async (request, response) => {
       return;
     }
 
-    updates.push("title = ?");
     values.push(titleResult.title);
+    updates.push(`title = $${values.length}`);
   }
 
   if (hasCompleted) {
@@ -191,44 +187,34 @@ router.patch("/:id", async (request, response) => {
       return;
     }
 
-    updates.push("completed = ?");
-    values.push(request.body.completed ? 1 : 0);
+    values.push(request.body.completed);
+    updates.push(`completed = $${values.length}`);
 
-    updates.push("completed_at = ?");
-    values.push(request.body.completed ? new Date().toISOString() : null);
+    values.push(request.body.completed ? new Date() : null);
+    updates.push(`completed_at = $${values.length}`);
   }
 
   const database = getDatabase();
+  values.push(todoId, visitorId);
 
-  const result = await database.run(
+  const result = await database.query(
     `
       UPDATE todos
       SET ${updates.join(", ")}
-      WHERE id = ? AND visitor_id = ?
+      WHERE id = $${values.length - 1} AND visitor_id = $${values.length}
+      RETURNING id, visitor_id, title, completed, created_at, completed_at
     `,
-    ...values,
-    todoId,
-    visitorId
+    values
   );
 
-  if (result.changes === 0) {
+  if (result.rowCount === 0) {
     response.status(404).json({
       error: "To-do not found."
     });
     return;
   }
 
-  const row = await database.get(
-    `
-      SELECT id, visitor_id, title, completed, created_at, completed_at
-      FROM todos
-      WHERE id = ? AND visitor_id = ?
-    `,
-    todoId,
-    visitorId
-  );
-
-  response.json(mapTodoRow(row));
+  response.json(mapTodoRow(result.rows[0]));
 });
 
 router.delete("/:id", async (request, response) => {
@@ -248,16 +234,15 @@ router.delete("/:id", async (request, response) => {
   }
 
   const database = getDatabase();
-  const result = await database.run(
+  const result = await database.query(
     `
       DELETE FROM todos
-      WHERE id = ? AND visitor_id = ?
+      WHERE id = $1 AND visitor_id = $2
     `,
-    todoId,
-    visitorId
+    [todoId, visitorId]
   );
 
-  if (result.changes === 0) {
+  if (result.rowCount === 0) {
     response.status(404).json({
       error: "To-do not found."
     });

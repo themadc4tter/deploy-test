@@ -1,3 +1,4 @@
+import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { initializeDatabase } from "./db.js";
@@ -11,9 +12,28 @@ const app = express();
 // Locally, we fall back to 3001 so it does not conflict with the React app.
 const PORT = process.env.PORT || 3001;
 
-// Allow requests from other local development servers, such as the React app.
-// Without CORS, browsers block many front-end-to-back-end requests.
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  process.env.CLIENT_ORIGIN
+].filter(Boolean);
+
+// Allow browser requests from the local React app and, in production, from the
+// deployed client URL configured in CLIENT_ORIGIN.
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Requests from tools like curl or server health checks may not have an
+      // Origin header. They are safe to allow through this CORS check.
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS."));
+    }
+  })
+);
 
 // Teach Express how to read JSON request bodies.
 // Later, this lets us receive data like { "title": "Book dentist" }.
@@ -32,7 +52,7 @@ app.get("/api/health", (request, response) => {
 app.use("/api/todos", todosRouter);
 
 async function startServer() {
-  // Prepare the SQLite database before the API starts accepting requests.
+  // Prepare the database before the API starts accepting requests.
   // This makes sure tables exist before future routes try to read or write data.
   await initializeDatabase();
 
