@@ -94,9 +94,9 @@ SQLite was used as an early local learning database because it is simple and fil
 
 Deployment will use two learning phases:
 
-- Front end hosting: Vercel or Netlify.
-- Back end hosting: Render, Railway, Fly.io, or similar.
-- Database hosting: PostgreSQL.
+- Front end hosting: Render Static Site.
+- Back end hosting: Render Web Service.
+- Database hosting: Render PostgreSQL.
 - Later infrastructure practice: a single rented VM running the front end, API, and database stack.
 
 ## 9. Example To-Do Data

@@ -480,17 +480,17 @@ The deployment plan has two phases.
 Use managed services so the first deployment focuses on application deployment rather than server administration.
 
 ```text
-React client: Vercel or Netlify
-Express API: Render, Railway, Fly.io, or similar
-Database: hosted PostgreSQL
+React client: Render Static Site
+Express API: Render Web Service
+Database: Render PostgreSQL
 ```
 
 This phase will require:
 
 - migrating the server from SQLite to PostgreSQL;
 - adding a `DATABASE_URL` environment variable;
-- setting `VITE_API_BASE_URL` to the deployed API URL;
-- configuring CORS so the API accepts requests from the deployed client;
+- setting `VITE_API_BASE_URL` on the Render Static Site to the deployed API URL;
+- configuring `CLIENT_ORIGIN` on the Render Web Service so the API accepts browser requests from the Render Static Site;
 - verifying the live app can create, update, complete, and delete to-dos.
 
 ### Phase 2: Single VM
@@ -522,7 +522,7 @@ API talks to database
 database stores to-dos
 ```
 
-The same `main` branch should remain the stable app. Deployment work can happen on short-lived branches, such as `deploy/vercel-render` and `deploy/vm`, then merge back into `main` after each phase works.
+The same `main` branch should remain the stable app. Deployment work can happen on short-lived branches, such as `deploy/render` and `deploy/vm`, then merge back into `main` after each phase works.
 
 ## 13. Build Principles
 

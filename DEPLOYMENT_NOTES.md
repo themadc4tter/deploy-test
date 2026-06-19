@@ -92,9 +92,9 @@ server/.env.example
 
 Actual `.env` files are ignored by Git and should not be committed.
 
-## Phase 1: Managed Platform Deployment
+## Phase 1: Render Managed Platform Deployment
 
-Phase 1 uses managed platforms so the first deployment focuses on application concepts instead of Linux server administration.
+Phase 1 uses Render managed services so the first deployment focuses on application concepts instead of Linux server administration.
 
 ```text
 Browser
@@ -109,9 +109,9 @@ Hosted PostgreSQL database
 Recommended shape:
 
 ```text
-React client: Vercel or Netlify
-Express API:  Render, Railway, Fly.io, or similar
-Database:     hosted PostgreSQL
+React client: Render Static Site
+Express API:  Render Web Service
+Database:     Render PostgreSQL
 ```
 
 The React front end is built into static files with:
@@ -127,9 +127,9 @@ The result is:
 client/dist/
 ```
 
-A front-end host such as Netlify or Vercel can serve those files.
+Render Static Site can serve those files.
 
-The Express server stays a running Node.js process. A back-end host such as Render, Railway, or Fly.io can run it with:
+The Express server stays a running Node.js process. Render Web Service can run it with:
 
 ```powershell
 npm start
@@ -137,15 +137,47 @@ npm start
 
 Phase 1 tasks:
 
-1. Create a short-lived branch such as `deploy/vercel-render`.
+1. Create a short-lived branch such as `deploy/render`.
 2. Use the PostgreSQL server database layer.
 3. Add `DATABASE_URL` to `server/.env.example`.
-4. Configure API CORS for the deployed front-end URL.
-5. Deploy the server to Render, Railway, Fly.io, or a similar host.
-6. Deploy the client to Vercel or Netlify.
-7. Set `VITE_API_BASE_URL` in the front-end host.
+4. Configure API CORS with `CLIENT_ORIGIN` for the deployed Render Static Site URL.
+5. Deploy the server to Render Web Service.
+6. Deploy the client to Render Static Site.
+7. Set `VITE_API_BASE_URL` in the Render Static Site environment.
 8. Test create, edit, complete, undo, and delete on the live app.
 9. Merge the deployment branch back into `main`.
+
+Suggested Render Web Service settings:
+
+```text
+Root Directory: server
+Build Command: npm install
+Start Command: npm start
+```
+
+Suggested Render Web Service environment variables:
+
+```text
+DATABASE_URL=<Render internal database URL>
+DATABASE_SSL=false
+CLIENT_ORIGIN=<Render Static Site URL after it exists>
+```
+
+Do not manually set `PORT` unless Render asks for it. The server already uses Render's provided `PORT`.
+
+Suggested Render Static Site settings:
+
+```text
+Root Directory: client
+Build Command: npm install && npm run build
+Publish Directory: dist
+```
+
+Suggested Render Static Site environment variable:
+
+```text
+VITE_API_BASE_URL=<Render Web Service URL>/api
+```
 
 ## Phase 2: Single VM Deployment
 
@@ -221,8 +253,8 @@ Use:
 main
   Stable app that should work in all environments.
 
-deploy/vercel-render
-  Temporary branch for Phase 1 deployment work.
+deploy/render
+  Temporary branch for Phase 1 Render deployment work.
 
 deploy/vm
   Temporary branch for Phase 2 VM deployment work.
@@ -237,8 +269,8 @@ Before Phase 1 deployment:
 1. Confirm the server uses PostgreSQL.
 2. Add `DATABASE_URL` to `server/.env.example`.
 3. Confirm the server still supports `PORT`.
-4. Set `VITE_API_BASE_URL` for the hosted client.
-5. Configure CORS for the hosted client origin.
+4. Set `VITE_API_BASE_URL` for the Render Static Site.
+5. Configure `CLIENT_ORIGIN` for the Render Static Site origin.
 6. Run `npm run build` in the client.
 7. Run the server with `npm start`.
 8. Test the live app end to end.
