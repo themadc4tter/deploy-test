@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*.db
+*.sqlite
+*.log
+PRD.md
+TECHNICAL_BLUEPRINT.md
