@@ -4,5 +4,3 @@ dist/
 *.db
 *.sqlite
 *.log
-PRD.md
-TECHNICAL_BLUEPRINT.md
